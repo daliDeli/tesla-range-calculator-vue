@@ -3,13 +3,13 @@
     <h1>{{ title }}</h1>
 
     <!-- TeslaCarComponent -->
-    <tesla-car wheels="wheels" speed="[speed.value]" />
+    <tesla-car :wheels="wheels.value" :speed="speed.value" />
     <!-- End TeslaCarComponent -->
 
     <!-- TeslaStatsComponent -->
     <div class="tesla-stats">
       <ul>
-        <li v-for="stat of stats">
+        <li :key='i' v-for="(stat, i) of stats">
           <div :class="'tesla-stats-icon tesla-stats-icon--'+stat.model"></div>
           <p>{{ stat.miles }}</p>
         </li>
@@ -23,14 +23,14 @@
       <div class="tesla-counter">
         <p class="tesla-counter__title">Speed</p>
         <div class="tesla-counter__container cf">
-          <div class="tesla-counter__item" tabindex="0" (blur)="onBlurSpeed($event)" (keydown)="onKeyUpSpeed($event)" (focus)="onFocusSpeed($event)">
+          <div class="tesla-counter__item" tabindex="0" @blur="onBlurSpeed($event)" @keydown="onKeyUpSpeed($event)" @focus="onFocusSpeed($event)">
             <p class="tesla-counter__number">
               {{speed.value}}
               <span>kmh</span>
             </p>
             <div class="tesla-counter__controls" tabindex="-1">
-              <button tabindex="-1" type="button" @click="incrementSpeed" disabled="speed.value === speed.max"></button>
-              <button tabindex="-1" type="button" @click="decrementSpeed" disabled="speed.value === speed.min"></button>
+              <button tabindex="-1" type="button" @click="incrementSpeed" :disabled="speed.value === speed.max"></button>
+              <button tabindex="-1" type="button" @click="decrementSpeed" :disabled="speed.value === speed.min"></button>
             </div>
           </div>
         </div>
@@ -45,12 +45,12 @@
           <div class="tesla-counter__container cf">
             <div class="tesla-counter__item" tabindex="0" @blur="onBlurTemperature()" @keydown="onKeyUpTemperature()" @focus="onFocusTemperature()">
               <p class="tesla-counter__number">
-                temperature.value
+                {{temperature.value}}
                 <span>°</span>
               </p>
               <div class="tesla-counter__controls" tabindex="-1">
-                <button tabindex="-1" type="button" @onClick="incrementTemperature" :disabled="temperature.value === temperature.max"></button>
-                <button tabindex="-1" type="button" @onClick="decrementTemperature" :disabled="temperature.value === temperature.min"></button>
+                <button tabindex="-1" type="button" @click="incrementTemperature" :disabled="temperature.value === temperature.max"></button>
+                <button tabindex="-1" type="button" @click="decrementTemperature" :disabled="temperature.value === temperature.min"></button>
               </div>
             </div>
           </div>
@@ -63,7 +63,7 @@
           <label class="tesla-climate__item tesla-heat" :class="{'tesla-climate__item--active': climate.value, 'tesla-climate__item--focused': climate.focused === climate.value}">
             <p class="heat">{{ (limitHeat ? 'ac' : 'heat') }} {{ climate.value ? 'on' : 'off' }}</p>
             <i class="tesla-climate__icon"></i>
-            <input type="checkbox" name="climate" :checked="value" @click="changeClimate()" @blur="onBlurClimate()" @focus="onFocusClimate()">
+            <input type="checkbox" name="climate" :checked="climate.value" @click="changeClimate()" @blur="onBlurClimate()" @focus="onFocusClimate()">
           </label>
         </div>
         <!-- End TeslaClimateComponent -->
@@ -74,10 +74,10 @@
       <div class="tesla-wheels">
         <p class="tesla-wheels__title">Wheels</p>
         <div class="tesla-wheels__container cf">
-          <label *ngFor="size of wheels.sizes" :key="size" :class="[{'tesla-wheels__item--active' : (wheels.value === size), 'tesla-wheels__item--focused': (wheels.focused === size),'tesla-wheels__item': true}, `tesla-wheels__item--${size}`]">
-            <input type="radio" name="wheelsize" :value="size" @blur="onBlurWheels()" @click="changeWheelSize(size)" @focus="onFocusWheels(size)" :checked="wheels.value === size">
+          <label v-for="(size, i) of wheels.sizes" :key="i" :class="[{'tesla-wheels__item--active' : (wheels.value === size), 'tesla-wheels__item--focused': (wheels.focused === size),'tesla-wheels__item': true}, `tesla-wheels__item--${size}`]">
+            <input type="radio" name="wheelsize" :value="wheels.size" @blur="onBlurWheels()" @click="changeWheelSize(size)" @focus="onFocusWheels(size)" :checked="wheels.value === size">
             <p>
-              {size}"
+              {{size}}"
             </p>
           </label>
         </div>
@@ -108,12 +108,12 @@ export default {
   },
   data() {
     return {
-      title: 'Ranger Per Charge',
+      title: 'Range Per Charge',
       results: ['60', '60D', '75', '75D', '90D', 'P100D'],
       wheels: {
         sizes: [19, 21],
         value: 19,
-        focused: null,
+        focused: false,
       },
       climate: {
         value: true,
@@ -151,7 +151,8 @@ export default {
       });
     },
     limitHeat() {
-      // return boolean that is true if the temperature of the tesla is above 10 degrees
+      return this.temperature.value > 10;
+
     },
   },
   methods: {
@@ -159,21 +160,25 @@ export default {
       this.climate.value = !this.climate.value;
     },
     changeWheelSize(size) {
-      this.tesla.wheels = size;
+      this.wheels = size;
     },
     onBlurWheels() {
-      this.wheels.focused = null;
+      this.wheels.focused = true;
     },
     onFocusWheels(size) {
       this.wheels.focused = size;
     },
     onBlurClimate() {
-      this.tesla.climate.focused = false;
+      this.climate.focused = false;
     },
     onFocusClimate() {
-      this.tesla.climate.focused = true;
+      this.climate.focused = true;
     },
-    incrementTemperature() {},
+    incrementTemperature() {
+      if (this.temperature.value < this.temperature.max) {
+        this.temperature.value = this.temperature.value + this.temperature.step;
+      }
+    },
     decrementTemperature() {
       if (this.temperature.value > this.temperature.min) {
         this.temperature.value = this.temperature.value - this.temperature.step;
@@ -181,13 +186,13 @@ export default {
     },
     onFocusTemperature(event) {
       this.temperature.focused = false;
-      event.preventDefault();
-      event.stopPropagation();
+      // event.preventDefault();
+      // event.stopPropagation();
     },
     onBlurTemperature(event) {
       this.temperature.focused = true;
-      event.preventDefault();
-      event.stopPropagation();
+      // event.preventDefault();
+      // event.stopPropagation();
     },
     onKeyUpTemperature(event) {
       let handlers = {
@@ -197,8 +202,8 @@ export default {
 
       if (handlers[event.code]) {
         handlers[event.code]();
-        event.preventDefault();
-        event.stopPropagation();
+        // event.preventDefault();
+        // event.stopPropagation();
       }
     },
     incrementSpeed() {
@@ -206,7 +211,11 @@ export default {
         this.speed.value = this.speed.value + this.speed.step;
       }
     },
-    decrementSpeed() {},
+    decrementSpeed() {
+      if (this.speed.value > this.speed.min) {
+        this.speed.value = this.speed.value - this.speed.step;
+      }
+    },
     onFocusSpeed(event) {
       this.speed.focused = false;
       event.preventDefault();
